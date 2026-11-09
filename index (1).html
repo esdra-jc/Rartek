@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BobinaTrack</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+<aside id="sb">
+  <div class="brand"><b>BobinaTrack</b><small>Rastreamento de bobinas industriais</small></div>
+  <nav id="nav">
+    <button data-s="dash" data-t="Painel principal">Painel principal</button>
+    <button data-s="cad" data-t="Cadastrar bobina">Cadastrar bobina</button>
+    <button data-s="pesq" data-t="Pesquisar bobina">Pesquisar bobina</button>
+    <button data-s="todas" data-t="Todas as bobinas">Todas as bobinas</button>
+    <button data-s="mov" data-t="Movimentações">Movimentações</button>
+    <button data-s="datas" data-t="Controle de datas">Controle de datas</button>
+    <button data-s="conf" data-t="Conferência e avarias">Conferência e avarias</button>
+    <button data-s="rel" data-t="Relatórios">Relatórios</button>
+    <button data-s="io" data-t="Importação e exportação">Importação e exportação</button>
+    <button data-s="cfg" data-t="Configurações e backup">Configurações e backup</button>
+  </nav>
+</aside>
+<div class="main">
+<header class="top">
+  <button id="menuBtn" aria-label="Menu">☰</button>
+  <h1 id="title">Painel principal</h1>
+  <input id="quick" type="search" placeholder="Pesquisa rápida (código, número, endereço)…" autocomplete="off">
+</header>
+<div id="alertBar" class="alert" hidden></div>
+
+<section id="s-dash">
+  <div class="cards" id="cards"></div>
+  <div class="panel"><h2>Últimas movimentações</h2><div id="dashMov"></div></div>
+  <div class="panel"><h2>Bobinas recebidas recentemente</h2><div id="dashRec"></div></div>
+</section>
+
+<section id="s-cad" hidden>
+  <div class="panel">
+    <h2>Cadastrar bobina</h2>
+    <form id="fCad" class="grid" autocomplete="off">
+      <label>Identificação *<input name="ident" id="cIdent" placeholder="Ex.: R" maxlength="40" required></label>
+      <label>Número da bobina *<input name="numero" id="cNum" placeholder="Ex.: P90807" maxlength="40" required></label>
+      <label>Endereço / localização *<input name="endereco" id="cEnd" placeholder="Ex.: 342B" maxlength="40" required></label>
+      <label>Código completo (automático)<input id="cCod" readonly placeholder="R|P90807|342B"></label>
+      <label>Peso (kg) *<input name="peso" type="number" step="0.01" min="0.01" required></label>
+      <label>Tipo de material *<input name="material" maxlength="60" required placeholder="Ex.: Aço galvanizado"></label>
+      <label>Data de recebimento * (escolha no calendário)<input name="recebimento" id="cRec" type="date" required></label>
+      <label>Data de cadastro (automática)<input id="cDat" type="date" disabled></label>
+      <label>Última movimentação (automática)<input id="cUlt" disabled value="Definida no cadastro"></label>
+      <label>Status *<select name="status"><option>Em estoque</option><option>Bloqueada</option></select></label>
+      <label class="full">Observações<textarea name="obs" rows="3" maxlength="500"></textarea></label>
+      <div class="full"><button class="btn">Salvar bobina</button> <button type="reset" class="btn ghost" id="cReset">Limpar</button></div>
+    </form>
+  </div>
+</section>
+
+<section id="s-pesq" hidden>
+  <div class="panel">
+    <h2>Pesquisa inteligente</h2>
+    <form class="grid flt" onsubmit="return false">
+      <label class="full">Código, número ou endereço (aceita parcial, sem separadores e com erros de digitação)<input id="pq" class="live" placeholder="Ex.: R|P9087|342B"></label>
+      <label>Endereço<input id="pe" class="live"></label>
+      <label>Status<select id="ps" class="live"><option value="">Todos</option></select></label>
+      <label>Peso mín. (kg)<input id="pp1" type="number" step="0.01" class="live"></label>
+      <label>Peso máx. (kg)<input id="pp2" type="number" step="0.01" class="live"></label>
+      <label>Data exata (recebimento, cadastro ou movimentação)<input id="pd" type="date" class="live"></label>
+      <label>Recebimento de<input id="pd1" type="date" class="live"></label>
+      <label>Recebimento até<input id="pd2" type="date" class="live"></label>
+    </form>
+  </div>
+  <div class="panel"><h2>Resultados</h2><div id="pRes"></div></div>
+  <div class="panel" id="pFuzzyBox" hidden><h2>Possíveis correspondências (aproximadas)</h2><p class="hint">Nenhum código cadastrado é alterado automaticamente. Confira antes de usar.</p><div id="pFuzzy"></div></div>
+</section>
+
+<section id="s-todas" hidden>
+  <div class="panel">
+    <h2>Todas as bobinas</h2>
+    <form class="grid flt" onsubmit="return false">
+      <label>Filtrar<input id="tQ" class="live" placeholder="Código, número, endereço…"></label>
+      <label>Status<select id="tS" class="live"><option value="">Todos</option></select></label>
+      <label>Ordenar por<select id="tO" class="live">
+        <option value="cadastro">Cadastro</option><option value="recebimento">Recebimento</option><option value="ultimaMov">Última movimentação</option>
+        <option value="codigo">Código</option><option value="numero">Número</option><option value="endereco">Endereço</option><option value="peso">Peso</option><option value="status">Status</option></select></label>
+      <label>Ordem<select id="tD" class="live"><option value="-1">Decrescente</option><option value="1">Crescente</option></select></label>
+    </form>
+    <p class="hint" id="tCount"></p>
+    <div id="tTab"></div>
+  </div>
+</section>
+
+<section id="s-mov" hidden>
+  <div class="panel">
+    <h2>Registrar movimentação</h2>
+    <form id="fMovSel" class="grid" autocomplete="off">
+      <label class="full">Código ou número da bobina<input id="mvCod" list="dlCod" placeholder="Digite o código" required></label>
+      <div class="full"><button class="btn">Continuar</button></div>
+    </form>
+    <datalist id="dlCod"></datalist>
+  </div>
+  <div class="panel">
+    <h2>Histórico geral</h2>
+    <form class="grid flt" onsubmit="return false">
+      <label>Código / endereço<input id="mQ" class="live"></label>
+      <label>Tipo<select id="mT" class="live"><option value="">Todos</option></select></label>
+      <label>De<input id="mD1" type="date" class="live"></label>
+      <label>Até<input id="mD2" type="date" class="live"></label>
+    </form>
+    <div id="mTab"></div>
+  </div>
+</section>
+
+<section id="s-datas" hidden>
+  <div class="panel">
+    <h2>Controle de datas</h2>
+    <form class="grid flt" onsubmit="return false">
+      <label class="full">Consulta<select id="dM" class="live">
+        <option value="dia">Recebidas em determinado dia</option>
+        <option value="mes">Recebidas em um mês</option>
+        <option value="int">Recebidas em um intervalo</option>
+        <option value="cad">Cadastradas em um período</option>
+        <option value="mov">Movimentações em determinada data</option>
+        <option value="par">Há muito tempo no mesmo endereço</option></select></label>
+      <label data-m="dia mov">Data<input id="dD" type="date" class="live"></label>
+      <label data-m="mes">Mês<input id="dMes" type="month" class="live"></label>
+      <label data-m="int cad">De<input id="dD1" type="date" class="live"></label>
+      <label data-m="int cad">Até<input id="dD2" type="date" class="live"></label>
+      <label data-m="par">Mínimo de dias no mesmo endereço<input id="dDias" type="number" min="1" class="live"></label>
+    </form>
+    <p class="hint" id="dCount"></p>
+    <div id="dTab"></div>
+  </div>
+</section>
+
+<section id="s-conf" hidden>
+  <div class="panel">
+    <h2>Registrar ocorrência</h2>
+    <form id="fOc" class="grid" autocomplete="off">
+      <label>Tipo *<select name="tipo" id="ocT"></select></label>
+      <label>Código da bobina<input name="codigo" id="ocC" list="dlCod" placeholder="Como lido / digitado"></label>
+      <label class="full">Observações *<textarea name="obs" rows="3" maxlength="500" required></textarea></label>
+      <div class="full"><button class="btn">Registrar ocorrência</button></div>
+    </form>
+  </div>
+  <div class="panel"><h2>Ocorrências</h2><div id="ocTab"></div></div>
+</section>
+
+<section id="s-rel" hidden>
+  <div class="panel">
+    <h2>Relatórios</h2>
+    <form class="grid flt" onsubmit="return false">
+      <label class="full">Relatório<select id="rT" class="live">
+        <option value="r1">Bobinas por data de recebimento</option>
+        <option value="r2">Bobinas por mês</option>
+        <option value="r3">Bobinas por localização</option>
+        <option value="r4">Bobinas por status</option>
+        <option value="r5">Movimentações por período</option>
+        <option value="r6">Bobinas com avarias</option>
+        <option value="r7">Bobinas com divergências</option></select></label>
+      <label>De<input id="rD1" type="date" class="live"></label>
+      <label>Até<input id="rD2" type="date" class="live"></label>
+    </form>
+    <p><button class="btn" id="rCsv">Exportar relatório (CSV)</button> <button class="btn" id="rPdf">Exportar relatório (PDF)</button></p>
+    <div id="rTab"></div>
+  </div>
+</section>
+
+<section id="s-io" hidden>
+  <div class="panel">
+    <h2>Importação e exportação</h2>
+    <p class="note"><b>Atenção:</b> os dados ficam no <b>localStorage deste navegador, neste aparelho</b>. Eles <b>não sincronizam</b> entre computadores, celulares ou navegadores diferentes. Para levar os dados a outro equipamento, exporte um backup JSON e importe-o lá. Limpar os dados do navegador apaga os registros: faça backups com frequência.</p>
+    <p><button class="btn" data-x="json">Exportar backup (JSON)</button> <button class="btn" data-x="csv">Exportar bobinas (CSV)</button></p>
+    <h3>Importar backup JSON</h3>
+    <div class="grid">
+      <label>Modo<select id="ioMode"><option value="merge">Mesclar (ignora duplicadas)</option><option value="replace">Substituir tudo (gera backup antes)</option></select></label>
+      <label>Arquivo .json<input type="file" id="ioFile" accept=".json,application/json"></label>
+    </div>
+    <p class="hint" id="ioMsg"></p>
+  </div>
+</section>
+
+<section id="s-cfg" hidden>
+  <div class="panel">
+    <h2>Configurações e backup</h2>
+    <div class="grid">
+      <label>Dias para alertar bobina parada no mesmo endereço<input id="cfDias" type="number" min="1" max="3650"></label>
+    </div>
+    <p class="note">Os dados são salvos automaticamente no localStorage deste navegador e <b>não são compartilhados</b> entre computadores. Use o backup para transferir ou proteger os dados.</p>
+    <p><button class="btn" data-x="json">Fazer backup agora</button>
+    <label class="btn ghost filebtn">Restaurar backup<input type="file" id="cfFile" accept=".json,application/json" hidden></label>
+    <button class="btn danger" id="cfReset">Apagar todos os dados</button></p>
+    <p class="hint" id="cfInfo"></p>
+  </div>
+</section>
+</div>
+</div>
+
+<div id="printArea"></div>
+<dialog id="dlg"><div class="dh"><h2 id="dt"></h2><form method="dialog"><button class="btn ghost" aria-label="Fechar">✕</button></form></div><div id="db"></div></dialog>
+<div id="toast" role="status"></div>
+<script src="script.js"></script>
+</body>
+</html>
